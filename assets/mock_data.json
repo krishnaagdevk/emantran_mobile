@@ -1,0 +1,134 @@
+{
+  "currentUser": {
+    "id": "usr_902183",
+    "name": "Alex Morgan",
+    "email": "alex.morgan@emantra.app",
+    "role": "Organizer",
+    "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=Alex%20Morgan"
+  },
+  "rooms": [
+    {
+      "id": "rm_creative_space",
+      "name": "Emantra Creative Space",
+      "domain": "emantra.app",
+      "is_verified": true
+    },
+    {
+      "id": "rm_strategic_hub",
+      "name": "Strategic Design Hub",
+      "domain": "emantra.app",
+      "is_verified": true
+    },
+    {
+      "id": "rm_external_collab",
+      "name": "External Collab Lounge",
+      "domain": "emantra.app",
+      "is_verified": false
+    }
+  ],
+  "channels": [
+    {
+      "id": "ch_announcements",
+      "room_id": "rm_creative_space",
+      "name": "announcements",
+      "description": "Official company broadcasts and crucial updates."
+    },
+    {
+      "id": "ch_general",
+      "room_id": "rm_creative_space",
+      "name": "general",
+      "description": "General banter and casual talk among team members."
+    },
+    {
+      "id": "ch_rsvp_alerts",
+      "room_id": "rm_creative_space",
+      "name": "rsvp-alerts",
+      "description": "Automated real-time notifications for event RSVPs."
+    },
+    {
+      "id": "ch_design_review",
+      "room_id": "rm_strategic_hub",
+      "name": "design-review",
+      "description": "Asynchronous layout reviews and high-fidelity critiques."
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_summer_gala",
+      "room_id": "rm_creative_space",
+      "name": "Annual Summer Gala",
+      "description": "An elegant evening celebrating our milestones, creative triumphs, and community achievements under the stars.",
+      "location": "Grand Conference Hall, Room 4",
+      "date_time": "2026-07-28T18:00:00Z",
+      "category": "Social",
+      "image_url": "https://api.dicebear.com/7.x/identicon/png?seed=SummerGala"
+    },
+    {
+      "id": "evt_design_keynote",
+      "room_id": "rm_strategic_hub",
+      "name": "Strategic Design Keynote",
+      "description": "A deep dive into our next-generation visual design system, highlighting new core tokens and aesthetic directions.",
+      "location": "Aesthetic Amphitheater, Suite A",
+      "date_time": "2026-08-05T10:00:00Z",
+      "category": "Corporate",
+      "image_url": "https://api.dicebear.com/7.x/identicon/png?seed=DesignKeynote"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "con_001",
+      "name": "Sarah Jenkins",
+      "email": "sarah.jenkins@emantra.app",
+      "phone": "+1-555-0199",
+      "notes": "Coordinating external vendor invites and RSVP compliance reviews.",
+      "category": "Colleague"
+    },
+    {
+      "id": "con_002",
+      "name": "Marcus Aurelius",
+      "email": "marcus.aurelius@emantra.app",
+      "phone": "+1-555-0144",
+      "notes": "Primary facilitator for the corporate keynote speaker arrangements.",
+      "category": "VIP"
+    },
+    {
+      "id": "con_003",
+      "name": "Helena Rostova",
+      "email": "helena.rostova@emantra.app",
+      "phone": "+1-555-0177",
+      "notes": "Aesthetic lead managing catering, music, and glassmorphism UI reviews.",
+      "category": "Friend"
+    }
+  ],
+  "guests": [
+    {
+      "id": "gst_001",
+      "name": "Sarah Jenkins",
+      "email": "sarah.jenkins@emantra.app",
+      "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=Sarah%20Jenkins",
+      "status": "Attending",
+      "category": "Colleague"
+    },
+    {
+      "id": "gst_002",
+      "name": "Marcus Aurelius",
+      "email": "marcus.aurelius@emantra.app",
+      "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=Marcus%20Aurelius",
+      "status": "Declined",
+      "category": "VIP"
+    },
+    {
+      "id": "gst_003",
+      "name": "Helena Rostova",
+      "email": "helena.rostova@emantra.app",
+      "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=Helena%20Rostova",
+      "status": "Pending",
+      "category": "Friend"
+    }
+  ],
+  "meta": {
+    "app_env": "mock",
+    "api_url": "http://localhost:8080",
+    "agentic_ai_model": "gpt-4o-mini"
+  }
+}

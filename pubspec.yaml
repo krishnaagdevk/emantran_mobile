@@ -1,0 +1,31 @@
+name: Emantran
+description: "Emantran Online Invitation & Event Management Platform Mobile Client."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0
+  provider: ^6.1.1
+  fl_chart: ^0.66.0
+  flutter_svg: ^2.0.10
+  animations: ^2.0.11
+  flutter_dotenv: ^5.1.0
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/mock_data.json
