@@ -18,6 +18,7 @@ class _EventRSVPListScreenState extends State<EventRSVPListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   int _selectedFilterIndex = 0; // 0: ALL, 1: ACCEPTED, 2: PENDING, 3: DECLINED
+  String _selectedCategoryFilter = 'ALL';
   String? _expandedGuestId;
 
   @override
@@ -29,10 +30,13 @@ class _EventRSVPListScreenState extends State<EventRSVPListScreen> {
   @override
   Widget build(BuildContext context) {
     final repo = Provider.of<ApiRepository>(context);
+    final event = repo.events.firstWhere((e) => e.id == widget.event.id, orElse: () => widget.event);
     final domain = repo.currentRoom?.domain ?? repo.currentUser?.domain ?? 'emantra.app';
-    final guests = repo.guests;
+    
+    // Filter guests based on event scoping
+    final guests = repo.guestsForEvent(event.id);
 
-    // Filter guests based on search and status tabs
+    // Filter guests based on search, status, and category filters
     final filteredGuests = guests.where((g) {
       // 1. Search Query filter
       final matchesSearch = g.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -40,10 +44,12 @@ class _EventRSVPListScreenState extends State<EventRSVPListScreen> {
       if (!matchesSearch) return false;
 
       // 2. Status tab filter
-      if (_selectedFilterIndex == 0) return true;
-      if (_selectedFilterIndex == 1) return g.status == GuestStatus.accepted;
-      if (_selectedFilterIndex == 2) return g.status == GuestStatus.pending;
-      if (_selectedFilterIndex == 3) return g.status == GuestStatus.declined;
+      if (_selectedFilterIndex == 1 && g.status != GuestStatus.accepted) return false;
+      if (_selectedFilterIndex == 2 && g.status != GuestStatus.pending) return false;
+      if (_selectedFilterIndex == 3 && g.status != GuestStatus.declined) return false;
+
+      // 3. Category filter
+      if (_selectedCategoryFilter != 'ALL' && g.category != _selectedCategoryFilter) return false;
 
       return true;
     }).toList();
@@ -57,7 +63,7 @@ class _EventRSVPListScreenState extends State<EventRSVPListScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'Guest List',
           style: TextStyle(
             fontFamily: 'Outfit',
@@ -76,7 +82,7 @@ class _EventRSVPListScreenState extends State<EventRSVPListScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: Text(
-                widget.event.title.toUpperCase(),
+                event.title.toUpperCase(),
                 style: const TextStyle(
                   fontFamily: 'JetBrains Mono',
                   fontSize: 10,
@@ -139,6 +145,11 @@ class _EventRSVPListScreenState extends State<EventRSVPListScreen> {
 
             // 3. Segmented Status Filters
             _buildSegmentedFilter(),
+
+            const SizedBox(height: 10),
+
+            // Category Filters
+            _buildCategoryFilter(),
 
             const SizedBox(height: 16),
 
@@ -281,6 +292,47 @@ class _EventRSVPListScreenState extends State<EventRSVPListScreen> {
                                           height: 1.4,
                                         ),
                                       ),
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        'MANAGE RESPONSE STATUS',
+                                        style: TextStyle(
+                                          fontFamily: 'JetBrains Mono',
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.muted,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          _buildStatusActionButton(
+                                            context,
+                                            repo,
+                                            guest: guest,
+                                            targetStatus: GuestStatus.accepted,
+                                            label: 'Attending',
+                                            activeColor: AppColors.success,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _buildStatusActionButton(
+                                            context,
+                                            repo,
+                                            guest: guest,
+                                            targetStatus: GuestStatus.pending,
+                                            label: 'Pending',
+                                            activeColor: AppColors.pending,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _buildStatusActionButton(
+                                            context,
+                                            repo,
+                                            guest: guest,
+                                            targetStatus: GuestStatus.declined,
+                                            label: 'Declined',
+                                            activeColor: AppColors.danger,
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -340,6 +392,103 @@ class _EventRSVPListScreenState extends State<EventRSVPListScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilter() {
+    final categories = ['ALL', ...ContactCategories.values];
+
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: categories.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final cat = categories[index];
+          final active = _selectedCategoryFilter == cat;
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedCategoryFilter = cat;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: active ? AppColors.violet : AppColors.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: active ? Colors.transparent : AppColors.border,
+                  width: 1,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                cat.toUpperCase(),
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  color: active ? Colors.white : AppColors.muted,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatusActionButton(
+    BuildContext context,
+    ApiRepository repo, {
+    required EventGuest guest,
+    required GuestStatus targetStatus,
+    required String label,
+    required Color activeColor,
+  }) {
+    final isCurrent = guest.status == targetStatus;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (!isCurrent) {
+            repo.updateGuestStatus(guest.id, targetStatus);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Updated ${guest.name}'s status to $label"),
+                backgroundColor: activeColor,
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          }
+        },
+        child: Container(
+          height: 32,
+          decoration: BoxDecoration(
+            color: isCurrent ? activeColor : AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isCurrent ? Colors.transparent : AppColors.border,
+              width: 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontFamily: 'JetBrains Mono',
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              color: isCurrent ? Colors.white : AppColors.muted,
+            ),
+          ),
+        ),
       ),
     );
   }

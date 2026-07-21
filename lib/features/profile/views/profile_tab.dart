@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../data/repositories/api_repository.dart';
-import '../../auth/views/login_screen.dart';
 import '../../organization/views/domain_verification_screen.dart';
 import '../../organization/views/room_settings_screen.dart';
 import 'settings_screen.dart';
@@ -289,11 +288,6 @@ class ProfileTab extends StatelessWidget {
             OutlinedButton(
               onPressed: () {
                 repo.logout();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
               },
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.danger, width: 1.2),

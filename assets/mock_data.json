@@ -31,25 +31,29 @@
       "id": "ch_announcements",
       "room_id": "rm_creative_space",
       "name": "announcements",
-      "description": "Official company broadcasts and crucial updates."
+      "description": "Official company broadcasts and crucial updates.",
+      "is_private": false
     },
     {
       "id": "ch_general",
       "room_id": "rm_creative_space",
       "name": "general",
-      "description": "General banter and casual talk among team members."
+      "description": "General banter and casual talk among team members.",
+      "is_private": false
     },
     {
       "id": "ch_rsvp_alerts",
       "room_id": "rm_creative_space",
       "name": "rsvp-alerts",
-      "description": "Automated real-time notifications for event RSVPs."
+      "description": "Automated real-time notifications for event RSVPs.",
+      "is_private": false
     },
     {
       "id": "ch_design_review",
       "room_id": "rm_strategic_hub",
       "name": "design-review",
-      "description": "Asynchronous layout reviews and high-fidelity critiques."
+      "description": "Asynchronous layout reviews and high-fidelity critiques.",
+      "is_private": false
     }
   ],
   "events": [
@@ -61,7 +65,11 @@
       "location": "Grand Conference Hall, Room 4",
       "date_time": "2026-07-28T18:00:00Z",
       "category": "Social",
-      "image_url": "https://api.dicebear.com/7.x/identicon/png?seed=SummerGala"
+      "image_url": "https://api.dicebear.com/7.x/identicon/png?seed=SummerGala",
+      "host": "Emantra Creative Space",
+      "accepted_count": 1,
+      "pending_count": 1,
+      "declined_count": 1
     },
     {
       "id": "evt_design_keynote",
@@ -71,7 +79,11 @@
       "location": "Aesthetic Amphitheater, Suite A",
       "date_time": "2026-08-05T10:00:00Z",
       "category": "Corporate",
-      "image_url": "https://api.dicebear.com/7.x/identicon/png?seed=DesignKeynote"
+      "image_url": "https://api.dicebear.com/7.x/identicon/png?seed=DesignKeynote",
+      "host": "Strategic Design Hub",
+      "accepted_count": 2,
+      "pending_count": 0,
+      "declined_count": 0
     }
   ],
   "contacts": [
@@ -98,11 +110,68 @@
       "phone": "+1-555-0177",
       "notes": "Aesthetic lead managing catering, music, and glassmorphism UI reviews.",
       "category": "Friend"
+    },
+    {
+      "id": "con_004",
+      "name": "David Chen",
+      "email": "david.chen@emantra.app",
+      "phone": "+1-555-0104",
+      "notes": "Lead backend developer specializing in high-throughput node architectures.",
+      "category": "Colleague"
+    },
+    {
+      "id": "con_005",
+      "name": "Aisha Rahman",
+      "email": "aisha.rahman@emantra.app",
+      "phone": "+1-555-0105",
+      "notes": "UX/UI consultant designing immersive, color-harmonious product experiences.",
+      "category": "VIP"
+    },
+    {
+      "id": "con_006",
+      "name": "Liam O'Connor",
+      "email": "liam.oconnor@emantra.app",
+      "phone": "+1-555-0106",
+      "notes": "DevOps mastermind ensuring scalable, multi-region container clusters.",
+      "category": "Colleague"
+    },
+    {
+      "id": "con_007",
+      "name": "Sofia Rodriguez",
+      "email": "sofia.rodriguez@emantra.app",
+      "phone": "+1-555-0107",
+      "notes": "Quality engineer ensuring absolute UI consistency and automation.",
+      "category": "Friend"
+    },
+    {
+      "id": "con_008",
+      "name": "Yuki Tanaka",
+      "email": "yuki.tanaka@emantra.app",
+      "phone": "+1-555-0108",
+      "notes": "Cloud architect crafting seamless hybrid federated schema setups.",
+      "category": "VIP"
+    },
+    {
+      "id": "con_009",
+      "name": "Amara Okafor",
+      "email": "amara.okafor@emantra.app",
+      "phone": "+1-555-0109",
+      "notes": "Developer advocate and active community event curator.",
+      "category": "Friend"
+    },
+    {
+      "id": "con_010",
+      "name": "Elena Petrova",
+      "email": "elena.petrova@emantra.app",
+      "phone": "+1-555-0110",
+      "notes": "Corporate event supervisor and strategic logistic planner.",
+      "category": "Colleague"
     }
   ],
   "guests": [
     {
       "id": "gst_001",
+      "event_id": "evt_summer_gala",
       "name": "Sarah Jenkins",
       "email": "sarah.jenkins@emantra.app",
       "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=Sarah%20Jenkins",
@@ -111,6 +180,7 @@
     },
     {
       "id": "gst_002",
+      "event_id": "evt_summer_gala",
       "name": "Marcus Aurelius",
       "email": "marcus.aurelius@emantra.app",
       "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=Marcus%20Aurelius",
@@ -119,11 +189,30 @@
     },
     {
       "id": "gst_003",
+      "event_id": "evt_summer_gala",
       "name": "Helena Rostova",
       "email": "helena.rostova@emantra.app",
       "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=Helena%20Rostova",
       "status": "Pending",
       "category": "Friend"
+    },
+    {
+      "id": "gst_004",
+      "event_id": "evt_design_keynote",
+      "name": "Aisha Rahman",
+      "email": "aisha.rahman@emantra.app",
+      "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=Aisha%20Rahman",
+      "status": "Attending",
+      "category": "VIP"
+    },
+    {
+      "id": "gst_005",
+      "event_id": "evt_design_keynote",
+      "name": "David Chen",
+      "email": "david.chen@emantra.app",
+      "avatar_url": "https://api.dicebear.com/7.x/initials/png?seed=David%20Chen",
+      "status": "Attending",
+      "category": "Colleague"
     }
   ],
   "meta": {

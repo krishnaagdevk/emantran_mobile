@@ -5,6 +5,7 @@ import '../../../data/models/models.dart';
 import '../../../data/repositories/api_repository.dart';
 import 'dm_chat_screen.dart';
 import 'channel_details_sheet.dart';
+import 'channel_chat_screen.dart';
 
 class ChannelListTab extends StatefulWidget {
   const ChannelListTab({super.key});
@@ -17,6 +18,9 @@ class _ChannelListTabState extends State<ChannelListTab> {
   final _channelNameController = TextEditingController();
 
   void _showAddChannelBottomSheet() {
+    _channelNameController.clear();
+    bool isPrivate = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -35,70 +39,121 @@ class _ChannelListTabState extends State<ChannelListTab> {
               ),
             ),
             padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: AppColors.faint.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Add Channel',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.primary,
-                        fontSize: 22,
-                      ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Channel Name input
-                TextFormField(
-                  controller: _channelNameController,
-                  autofocus: true,
-                  style: const TextStyle(fontFamily: 'Outfit', fontSize: 16),
-                  decoration: const InputDecoration(
-                    labelText: 'CHANNEL NAME',
-                    hintText: 'e.g. design-squad',
-                    prefixText: '# ',
-                    prefixStyle: TextStyle(
-                      fontFamily: 'JetBrains Mono',
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                
-                ElevatedButton(
-                  onPressed: () {
-                    final text = _channelNameController.text.trim();
-                    if (text.isNotEmpty) {
-                      final repo = Provider.of<ApiRepository>(context, listen: false);
-                      repo.addChannel(text.replaceAll(' ', '-').toLowerCase());
-                      _channelNameController.clear();
-                      Navigator.pop(context);
-                      
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Channel "#$text" added successfully!'),
-                          backgroundColor: AppColors.success,
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: AppColors.faint.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(3),
                         ),
-                      );
-                    }
-                  },
-                  child: const Text('Add to list'),
-                ),
-                const SizedBox(height: 12),
-              ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Add Channel',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: AppColors.primary,
+                            fontSize: 22,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Channel Name input
+                    TextFormField(
+                      controller: _channelNameController,
+                      autofocus: true,
+                      style: const TextStyle(fontFamily: 'Outfit', fontSize: 16),
+                      decoration: InputDecoration(
+                        labelText: 'CHANNEL NAME',
+                        hintText: 'e.g. design-squad',
+                        prefixText: isPrivate ? '🔒 ' : '# ',
+                        prefixStyle: const TextStyle(
+                          fontFamily: 'JetBrains Mono',
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Private Toggle Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Private Channel',
+                              style: TextStyle(
+                                fontFamily: 'Outfit',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'By invitation only, locked workspace.',
+                              style: TextStyle(
+                                fontFamily: 'Outfit',
+                                fontSize: 11,
+                                color: AppColors.muted.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch.adaptive(
+                          value: isPrivate,
+                          activeColor: AppColors.cta,
+                          onChanged: (val) {
+                            setModalState(() {
+                              isPrivate = val;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    ElevatedButton(
+                      onPressed: () {
+                        final text = _channelNameController.text.trim();
+                        if (text.isNotEmpty) {
+                          final repo = Provider.of<ApiRepository>(context, listen: false);
+                          repo.addChannel(
+                            text.replaceAll(' ', '-').toLowerCase(),
+                            isPrivate: isPrivate,
+                          );
+                          _channelNameController.clear();
+                          Navigator.pop(context);
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isPrivate
+                                    ? 'Private channel "🔒 $text" added successfully!'
+                                    : 'Channel "#$text" added successfully!',
+                              ),
+                              backgroundColor: AppColors.success,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Add to list'),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                );
+              },
             ),
           ),
         );
@@ -187,7 +242,7 @@ class _ChannelListTabState extends State<ChannelListTab> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '124 MEMBERS · ACTIVE CHANNELS',
+                        '${contacts.length} MEMBERS · ACTIVE CHANNELS',
                         style: TextStyle(
                           fontFamily: 'JetBrains Mono',
                           fontSize: 9,
@@ -263,18 +318,31 @@ class _ChannelListTabState extends State<ChannelListTab> {
                   child: Material(
                     color: Colors.transparent,
                     child: ListTile(
-                      onTap: () => _showChannelDetails(channel),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChannelChatScreen(channel: channel),
+                          ),
+                        );
+                      },
                       dense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                      leading: Text(
-                        '#',
-                        style: TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: hasUnread ? AppColors.violet : AppColors.muted,
-                        ),
-                      ),
+                      leading: channel.isPrivate
+                          ? Icon(
+                              Icons.lock_outline_rounded,
+                              color: hasUnread ? AppColors.violet : AppColors.muted,
+                              size: 18,
+                            )
+                          : Text(
+                              '#',
+                              style: TextStyle(
+                                fontFamily: 'JetBrains Mono',
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: hasUnread ? AppColors.violet : AppColors.muted,
+                              ),
+                            ),
                       title: Text(
                         channel.name,
                         style: TextStyle(

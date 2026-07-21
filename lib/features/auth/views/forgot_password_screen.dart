@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/widgets/atmospheric_blobs.dart';
 import '../../../app/widgets/frameless_text_field.dart';
+import '../../../data/repositories/api_repository.dart';
 import 'reset_password_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -15,18 +18,109 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isSubmitted = false;
+  bool _isLoading = false;
+
+  // Resend Link Debounce Timer
+  Timer? _debounceTimer;
+  int _secondsRemaining = 0;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
-  void _sendResetLink() {
+  void _startResendDebounce() {
+    setState(() {
+      _secondsRemaining = 30;
+    });
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() {
+          _secondsRemaining--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _sendResetLink() async {
+    if (_isLoading) return;
     if (_formKey.currentState!.validate()) {
       setState(() {
-        _isSubmitted = true;
+        _isLoading = true;
       });
+
+      try {
+        final repo = Provider.of<ApiRepository>(context, listen: false);
+        await repo.sendForgotPasswordLink(_emailController.text.trim());
+        
+        setState(() {
+          _isSubmitted = true;
+          _isLoading = false;
+        });
+        _startResendDebounce();
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(e.toString().replaceAll('Exception: ', ''))),
+                ],
+              ),
+              backgroundColor: AppColors.danger,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleResend() async {
+    if (_secondsRemaining > 0 || _isLoading) return;
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final repo = Provider.of<ApiRepository>(context, listen: false);
+      await repo.sendForgotPasswordLink(_emailController.text.trim());
+      setState(() {
+        _isLoading = false;
+      });
+      _startResendDebounce();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verification link resent successfully!'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -61,18 +155,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildInputState() {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 20),
-          // Envelope trajectory geometric art / icon
           Center(
             child: Container(
               width: 140,
               height: 140,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.06),
+              decoration: const BoxDecoration(
+                color: Color(0x0F372475),
                 shape: BoxShape.circle,
               ),
               child: CustomPaint(
@@ -101,7 +196,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
           const SizedBox(height: 36),
 
-          // Email form card
           Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
@@ -127,16 +221,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty || !val.contains('@')) {
-                        return 'Please enter a valid email';
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      if (!emailRegex.hasMatch(val.trim())) {
+                        return 'Please enter a valid email format';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 28),
                   ElevatedButton(
-                    onPressed: _sendResetLink,
-                    child: const Text('Send reset link'),
+                    onPressed: _isLoading ? null : _sendResetLink,
+                    child: _isLoading 
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Send reset link'),
                   ),
                 ],
               ),
@@ -153,7 +256,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const SizedBox(height: 40),
-        // Big green success tick / envelope circle
         Center(
           child: Container(
             width: 100,
@@ -186,7 +288,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          'We have successfully sent a secure reset link to ${_emailController.text}. Please check your folder spam if you do not receive it in a few minutes.',
+          'We have successfully sent a secure reset link to ${_emailController.text}. Please check your spam folder if you do not receive it in a few minutes.',
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontFamily: 'Outfit',
@@ -197,29 +299,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 48),
 
-        // Action Options
         ElevatedButton(
           onPressed: () {
-            // Direct simulator shortcut for testing: reset password
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const ResetPasswordScreen()),
+              MaterialPageRoute(
+                builder: (context) => ResetPasswordScreen(email: _emailController.text.trim()),
+              ),
             );
           },
           child: const Text('Open Set New Password'),
         ),
         const SizedBox(height: 16),
         TextButton(
-          onPressed: () {
-            setState(() {
-              _isSubmitted = false;
-            });
-          },
-          child: const Text(
-            'Resend link',
+          onPressed: _secondsRemaining > 0 || _isLoading ? null : _handleResend,
+          child: Text(
+            _secondsRemaining > 0 
+                ? 'Resend link in (${_secondsRemaining}s)' 
+                : 'Resend link',
             style: TextStyle(
               fontFamily: 'Outfit',
-              color: AppColors.violet,
+              color: _secondsRemaining > 0 ? AppColors.faint : AppColors.violet,
               fontWeight: FontWeight.w600,
               fontSize: 15,
             ),
@@ -230,7 +330,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 }
 
-// Custom Painter to draw a minimalist envelope trajectory curve
 class EnvelopeTrajectoryPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -240,11 +339,6 @@ class EnvelopeTrajectoryPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final dashPaint = Paint()
-      ..color = AppColors.faint
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
     final path = Path()
       ..moveTo(size.width * 0.2, size.height * 0.7)
       ..cubicTo(
@@ -253,10 +347,8 @@ class EnvelopeTrajectoryPainter extends CustomPainter {
         size.width * 0.8, size.height * 0.5,
       );
 
-    // Draw solid path
     canvas.drawPath(path, paint);
 
-    // Draw solid envelope outline
     final envPaint = Paint()
       ..color = AppColors.primary
       ..strokeWidth = 2.5
@@ -270,7 +362,6 @@ class EnvelopeTrajectoryPainter extends CustomPainter {
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(3));
     canvas.drawRRect(rrect, envPaint);
 
-    // draw flap
     final flap = Path()
       ..moveTo(rect.left, rect.top)
       ..lineTo(rect.center.dx, rect.center.dy + 2)

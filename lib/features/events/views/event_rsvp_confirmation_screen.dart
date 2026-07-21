@@ -39,8 +39,8 @@ class EventRSVPConfirmationScreen extends StatelessWidget {
                     boxShadow: [
                       BoxShadow(
                         color: isAttending 
-                            ? const Color(0x2510B981) 
-                            : const Color(0x25E11D48),
+                            ? AppColors.success.withOpacity(0.15) 
+                            : AppColors.danger.withOpacity(0.15),
                         blurRadius: 15,
                         offset: const Offset(0, 6),
                       ),

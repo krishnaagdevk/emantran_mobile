@@ -8,6 +8,7 @@ import '../../../data/repositories/api_repository.dart';
 import '../../organization/views/room_discovery_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import '../../../../main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -70,9 +71,10 @@ class _LoginScreenState extends State<LoginScreen> {
         await repo.login(_emailController.text.trim(), _passwordController.text.trim());
         
         if (mounted) {
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const RoomDiscoveryScreen()),
+            MaterialPageRoute(builder: (context) => const AppEntryPoint()),
+            (route) => false,
           );
         }
       } catch (e) {

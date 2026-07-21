@@ -54,12 +54,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() {
                         _darkMode = val;
                       });
+                      _showSettingUpdatedToast('Dark Mode preference saved.');
                     }),
                     const Divider(height: 1, color: AppColors.border),
                     _buildToggleRow('Compact Event List View', _compactView, (val) {
                       setState(() {
                         _compactView = val;
                       });
+                      _showSettingUpdatedToast('Compact view preference saved.');
                     }),
                   ],
                 ),
@@ -77,18 +79,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() {
                         _notifRSVP = val;
                       });
+                      _showSettingUpdatedToast('Instant response alerts ${val ? "enabled" : "disabled"}.');
                     }),
                     const Divider(height: 1, color: AppColors.border),
                     _buildToggleRow('Guest Accepted Alerts', _notifAccepted, (val) {
                       setState(() {
                         _notifAccepted = val;
                       });
+                      _showSettingUpdatedToast('Guest acceptance alerts ${val ? "enabled" : "disabled"}.');
                     }),
                     const Divider(height: 1, color: AppColors.border),
                     _buildToggleRow('Daily digest summary', _notifDaily, (val) {
                       setState(() {
                         _notifDaily = val;
                       });
+                      _showSettingUpdatedToast('Daily digest report ${val ? "enabled" : "disabled"}.');
                     }),
                   ],
                 ),
@@ -151,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: Colors.transparent,
                       child: ListTile(
                         dense: true,
-                        onTap: () {},
+                        onTap: _showChangePasswordBottomSheet,
                         title: const Text(
                           'Change security lock password',
                           style: TextStyle(fontFamily: 'Outfit', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.ink),
@@ -164,14 +169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: Colors.transparent,
                       child: ListTile(
                         dense: true,
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Account erasure request sent to room administrator.'),
-                              backgroundColor: AppColors.danger,
-                            ),
-                          );
-                        },
+                        onTap: _showDeleteAccountConfirmationDialog,
                         title: const Text(
                           'Request Account Deletion',
                           style: TextStyle(fontFamily: 'Outfit', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.danger),
@@ -231,6 +229,183 @@ class _SettingsScreenState extends State<SettingsScreen> {
         activeColor: AppColors.cta,
         onChanged: onChanged,
       ),
+    );
+  }
+
+  void _showSettingUpdatedToast(String message) {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.primary,
+        duration: const Duration(milliseconds: 1000),
+      ),
+    );
+  }
+
+  void _showChangePasswordBottomSheet() {
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.faint.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Change Password Lock',
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Secure your offline access to invite registries and room directories.',
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: passwordController,
+                    obscureText: true,
+                    style: const TextStyle(fontFamily: 'Outfit', color: AppColors.ink),
+                    decoration: const InputDecoration(
+                      labelText: 'NEW PASSWORD',
+                      labelStyle: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.muted),
+                      hintText: 'Enter at least 4 characters',
+                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.violet)),
+                    ),
+                    validator: (val) {
+                      if (val == null || val.length < 4) {
+                        return 'Password must be at least 4 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: confirmController,
+                    obscureText: true,
+                    style: const TextStyle(fontFamily: 'Outfit', color: AppColors.ink),
+                    decoration: const InputDecoration(
+                      labelText: 'CONFIRM PASSWORD',
+                      labelStyle: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.muted),
+                      hintText: 'Repeat new password',
+                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.violet)),
+                    ),
+                    validator: (val) {
+                      if (val != passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Security lock password successfully updated!'),
+                            backgroundColor: AppColors.success,
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text('Update Password'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDeleteAccountConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Delete Account?',
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  color: AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'This action is irreversible. All of your cached contacts, RSVP histories, and private keys will be wiped permanently from the device and room databases.',
+            style: TextStyle(fontFamily: 'Outfit', fontSize: 13, color: AppColors.muted, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(fontFamily: 'Outfit', color: AppColors.muted)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Account erasure request queued & mock local workspace purged.'),
+                    backgroundColor: AppColors.danger,
+                  ),
+                );
+              },
+              child: const Text('Permanently Delete', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.w700, color: AppColors.danger)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -19,19 +19,11 @@ class _DashboardTabState extends State<DashboardTab> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _agentController = TextEditingController();
   String _searchQuery = '';
-  int _selectedDateIndex = 1; // July 18
+  int _selectedDateIndex = 0; // Dynamic selection index
+  String? _lastRoomId; // Tracker for active workspace switches
   bool _isAgentLoading = false;
   String? _agentReply;
   String? _agentAction;
-
-  final List<Map<String, String>> _dates = [
-    {'day': 'MON', 'num': '13'},
-    {'day': 'WED', 'num': '15'},
-    {'day': 'SAT', 'num': '18'},
-    {'day': 'FRI', 'num': '24'},
-    {'day': 'TUE', 'num': '28'},
-    {'day': 'WED', 'num': '05'},
-  ];
 
   @override
   void dispose() {
@@ -45,9 +37,63 @@ class _DashboardTabState extends State<DashboardTab> {
     final repo = Provider.of<ApiRepository>(context);
     final roomName = repo.currentRoom?.name ?? 'Emantra Workspace';
     final roomVerified = repo.currentRoom?.isVerified ?? true;
-    
-    // Filter events based on search query
+    final roomId = repo.currentRoom?.id;
+
+    if (_lastRoomId != roomId) {
+      _lastRoomId = roomId;
+      _selectedDateIndex = 0;
+    }
+
+    // Generate dates dynamically from actual events in the active workspace
+    final List<Map<String, String>> dynamicDates = [];
+    final Set<String> addedDays = {};
+
+    final sortedEvents = List<OrgEvent>.from(repo.events)
+      ..sort((a, b) {
+        final dateA = a.rawDateTime ?? DateTime.now();
+        final dateB = b.rawDateTime ?? DateTime.now();
+        return dateA.compareTo(dateB);
+      });
+
+    for (final e in sortedEvents) {
+      final dt = e.rawDateTime ?? DateTime.now();
+      const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+      final dayStr = weekdays[dt.weekday - 1];
+      final numStr = dt.day.toString().padLeft(2, '0');
+
+      // Unique day key using year-month-day to prevent duplicates
+      final dayKey = '${dt.year}-${dt.month}-${dt.day}';
+      if (!addedDays.contains(dayKey)) {
+        addedDays.add(dayKey);
+        dynamicDates.add({
+          'day': dayStr,
+          'num': numStr,
+          'dateKey': e.dateText,
+          'year': dt.year.toString(),
+          'month': dt.month.toString(),
+          'dayNum': dt.day.toString(),
+        });
+      }
+    }
+
+    final activeIndex = dynamicDates.isEmpty ? 0 : _selectedDateIndex.clamp(0, dynamicDates.length - 1);
+
+    // Filter events based on search query AND active carousel selection
     final filteredEvents = repo.events.where((e) {
+      // Date filter using raw year/month/day calendar dates
+      if (dynamicDates.isNotEmpty) {
+        final selectedDate = dynamicDates[activeIndex];
+        final selYear = int.parse(selectedDate['year']!);
+        final selMonth = int.parse(selectedDate['month']!);
+        final selDay = int.parse(selectedDate['dayNum']!);
+
+        final edt = e.rawDateTime ?? DateTime.now();
+        if (edt.year != selYear || edt.month != selMonth || edt.day != selDay) {
+          return false;
+        }
+      }
+      
+      // Search query filter
       if (_searchQuery.isEmpty) return true;
       return e.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           e.venue.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -57,9 +103,11 @@ class _DashboardTabState extends State<DashboardTab> {
     final liveEvents = filteredEvents.where((e) => e.isLive).toList();
     final upcomingEvents = filteredEvents.where((e) => !e.isLive).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
         // 1. Fixed Header: Room Switched Pill & Search
         Padding(
           padding: const EdgeInsets.only(left: 20, right: 20, top: 12),
@@ -150,127 +198,129 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        if (repo.events.isNotEmpty) ...[
+          const SizedBox(height: 16),
 
-        // 2. Monospace Date Carousel
-        SizedBox(
-          height: 64,
-          child: ListView.separated(
+          // 2. Monospace Date Carousel
+          SizedBox(
+            height: 64,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: dynamicDates.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final d = dynamicDates[index];
+                final isSelected = activeIndex == index;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedDateIndex = index;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 52,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.cta : AppColors.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected ? Colors.transparent : AppColors.border,
+                        width: 1.2,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.cta.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              )
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          d['day']!,
+                          style: TextStyle(
+                            fontFamily: 'JetBrains Mono',
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? Colors.white : AppColors.muted,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          d['num']!,
+                          style: TextStyle(
+                            fontFamily: 'JetBrains Mono',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? Colors.white : AppColors.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 3. Search Bar
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: _dates.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final d = _dates[index];
-              final isSelected = _selectedDateIndex == index;
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedDateIndex = index;
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: 52,
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.cta : AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSelected ? Colors.transparent : AppColors.border,
-                      width: 1.2,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.cta.withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            )
-                          ]
-                        : null,
-                  ),
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        d['day']!,
-                        style: TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected ? Colors.white : AppColors.muted,
-                        ),
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border, width: 1),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  const Icon(Icons.search_rounded, color: AppColors.muted, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                        });
+                      },
+                      style: const TextStyle(fontFamily: 'Outfit', fontSize: 15, color: AppColors.ink),
+                      decoration: const InputDecoration(
+                        hintText: 'Search events or venues...',
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        d['num']!,
-                        style: TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected ? Colors.white : AppColors.ink,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // 3. Search Bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: [
-                const Icon(Icons.search_rounded, color: AppColors.muted, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) {
-                      setState(() {
-                        _searchQuery = val;
-                      });
-                    },
-                    style: const TextStyle(fontFamily: 'Outfit', fontSize: 15, color: AppColors.ink),
-                    decoration: const InputDecoration(
-                      hintText: 'Search events or venues...',
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                ),
-                if (_searchQuery.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      _searchController.clear();
-                      setState(() {
-                        _searchQuery = '';
-                      });
-                    },
-                    child: const Icon(Icons.close_rounded, color: AppColors.muted, size: 18),
-                  ),
-              ],
+                  if (_searchQuery.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                      },
+                      child: const Icon(Icons.close_rounded, color: AppColors.muted, size: 18),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
 
         const SizedBox(height: 16),
 
@@ -501,7 +551,8 @@ class _DashboardTabState extends State<DashboardTab> {
 
         // 4. Scrollable Event Sections
         if (repo.isSyncing && repo.events.isEmpty)
-          const Expanded(
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -523,131 +574,132 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
           )
         else if (repo.syncError != null && repo.events.isEmpty)
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
             child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.cloud_off_rounded,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.cloud_off_rounded,
+                    color: AppColors.muted,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Connection Error',
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    repo.syncError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
                       color: AppColors.muted,
-                      size: 48,
+                      fontSize: 13,
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Connection Error',
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      repo.syncError!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Outfit',
-                        color: AppColors.muted,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () => repo.refresh(),
-                      icon: const Icon(Icons.sync_rounded, size: 16),
-                      label: const Text('Retry Sync'),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => repo.refresh(),
+                    icon: const Icon(Icons.sync_rounded, size: 16),
+                    label: const Text('Retry Sync'),
+                  ),
+                ],
               ),
             ),
           )
         else if (repo.events.isEmpty)
-          const Expanded(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 32),
             child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.event_note_rounded,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.cta.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.event_available_rounded,
+                      color: AppColors.cta,
+                      size: 36,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'No events scheduled yet',
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                      fontSize: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "This workspace doesn't have any active events. Create your first event by clicking '+' below, or ask Emantran AI above to schedule one!",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       color: AppColors.muted,
-                      size: 44,
+                      fontSize: 14,
+                      height: 1.4,
                     ),
-                    SizedBox(height: 16),
-                    Text(
-                      'No events scheduled',
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
-                        fontSize: 16,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Your organization room doesn\'t have any active events. Host a new event to get started!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        color: AppColors.muted,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           )
         else if (filteredEvents.isEmpty)
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
             child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.search_off_rounded,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.search_off_rounded,
+                    color: AppColors.muted,
+                    size: 40,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No matches found',
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'No events match "$_searchQuery"',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
                       color: AppColors.muted,
-                      size: 40,
+                      fontSize: 13,
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No matches found',
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'No events match "$_searchQuery"',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Outfit',
-                        color: AppColors.muted,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           )
         else
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Column(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // A. LIVE NOW Section
@@ -897,8 +949,8 @@ class _DashboardTabState extends State<DashboardTab> {
                 ],
               ),
             ),
-          ),
       ],
-    );
+    ),
+  );
   }
 }

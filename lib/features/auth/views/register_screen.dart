@@ -5,6 +5,7 @@ import '../../../app/widgets/atmospheric_blobs.dart';
 import '../../../app/widgets/frameless_text_field.dart';
 import '../../../data/repositories/api_repository.dart';
 import '../../organization/views/organization_setup_screen.dart';
+import '../../../../main.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -47,10 +48,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
 
         if (mounted) {
-          // Navigate to Organization Setup (first run) screen
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const OrganizationSetupScreen()),
+            MaterialPageRoute(builder: (context) => const AppEntryPoint()),
+            (route) => false,
           );
         }
       } catch (e) {

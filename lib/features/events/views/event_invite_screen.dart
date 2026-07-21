@@ -19,7 +19,7 @@ class _EventInviteScreenState extends State<EventInviteScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  String _selectedCategory = 'Colleagues';
+  String _selectedCategory = ContactCategories.colleague;
   String _searchQuery = '';
 
   @override
@@ -33,6 +33,7 @@ class _EventInviteScreenState extends State<EventInviteScreen> {
     if (_formKey.currentState!.validate()) {
       final repo = Provider.of<ApiRepository>(context, listen: false);
       repo.addGuest(
+        eventId: widget.event.id,
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         status: GuestStatus.pending,
@@ -41,7 +42,7 @@ class _EventInviteScreenState extends State<EventInviteScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Official invite dispatched to ${_nameController.text}!'),
+          content: Text('Official invite queued for background dispatch to ${_nameController.text.trim()}!'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -51,10 +52,16 @@ class _EventInviteScreenState extends State<EventInviteScreen> {
   }
 
   void _autofillFromContact(AppContact contact) {
+    String category = contact.category;
+    if (category == 'Colleagues') category = 'Colleague';
+    if (category == 'Friends') category = 'Friend';
+    if (!ContactCategories.values.contains(category)) {
+      category = 'None';
+    }
     setState(() {
       _nameController.text = contact.name;
       _emailController.text = contact.email;
-      _selectedCategory = contact.category;
+      _selectedCategory = category;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -173,8 +180,10 @@ class _EventInviteScreenState extends State<EventInviteScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Row(
-                            children: ['Colleagues', 'VIP', 'Friends', 'Family'].map((cat) {
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: ContactCategories.values.map((cat) {
                               final active = _selectedCategory == cat;
                               return GestureDetector(
                                 onTap: () {
@@ -183,7 +192,6 @@ class _EventInviteScreenState extends State<EventInviteScreen> {
                                   });
                                 },
                                 child: Container(
-                                  margin: const EdgeInsets.only(right: 8),
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: active ? AppColors.violet : AppColors.surface,

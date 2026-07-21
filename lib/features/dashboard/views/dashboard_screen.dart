@@ -8,7 +8,6 @@ import '../../../data/repositories/api_repository.dart';
 import '../../events/views/create_event_screen.dart';
 import '../../contacts/views/contacts_list_tab.dart';
 import '../../profile/views/profile_tab.dart';
-import '../../auth/views/login_screen.dart';
 import 'dashboard_tab.dart';
 import 'channel_list_tab.dart';
 
@@ -25,15 +24,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final repo = Provider.of<ApiRepository>(context, listen: false);
-      if (repo.currentUser == null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
-    });
   }
 
   void _onTabSelected(int index) {
@@ -206,7 +196,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.transparent, // Let blurs shine
         body: SafeArea(
           bottom: false, // Nav bar handles bottom notches gracefully
-          child: tabs[_currentTabIndex],
+          child: IndexedStack(
+            index: _currentTabIndex,
+            children: tabs,
+          ),
         ),
         bottomNavigationBar: AsymmetricBottomNavBar(
           currentIndex: _currentTabIndex,

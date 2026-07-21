@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/widgets/atmospheric_blobs.dart';
 import '../../../app/widgets/frameless_text_field.dart';
+import '../../../app/widgets/status_chip.dart';
 import '../../../data/models/models.dart';
 import '../../../data/repositories/api_repository.dart';
 import 'event_rsvp_confirmation_screen.dart';
@@ -21,10 +22,20 @@ class _EventRSVPSignupScreenState extends State<EventRSVPSignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   bool _isAttending = true;
-  final String _invitationStatus = 'ACTIVE'; // ACTIVE / EXPIRED / RESPONDED
 
   void _submitRSVP() {
     if (_formKey.currentState!.validate()) {
+      final repo = Provider.of<ApiRepository>(context, listen: false);
+      repo.addGuest(
+        eventId: widget.event.id,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim().isEmpty 
+            ? '${_nameController.text.trim().toLowerCase().replaceAll(' ', '.')}@example.com' 
+            : _emailController.text.trim(),
+        status: _isAttending ? GuestStatus.accepted : GuestStatus.declined,
+        category: 'Self-Registered',
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

@@ -20,7 +20,7 @@ class _AddEditContactScreenState extends State<AddEditContactScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
-  String _selectedCategory = 'Colleagues';
+  String _selectedCategory = ContactCategories.colleague;
 
   bool get _isEditMode => widget.contact != null;
 
@@ -33,7 +33,11 @@ class _AddEditContactScreenState extends State<AddEditContactScreen> {
       _emailController.text = c.email;
       _phoneController.text = c.phone;
       _notesController.text = c.notes;
-      _selectedCategory = c.category;
+      
+      String category = c.category;
+      if (category == 'Colleagues') category = 'Colleague';
+      if (category == 'Friends') category = 'Friend';
+      _selectedCategory = category;
     }
   }
 
@@ -226,39 +230,40 @@ class _AddEditContactScreenState extends State<AddEditContactScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      children: ['Colleagues', 'VIP', 'Friends', 'Family'].map((cat) {
-                        final active = _selectedCategory == cat;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedCategory = cat;
-                            });
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: active ? AppColors.violet : AppColors.surface,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: active ? Colors.transparent : AppColors.border,
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Text(
-                              cat,
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: active ? Colors.white : AppColors.muted,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                     Wrap(
+                       spacing: 8,
+                       runSpacing: 8,
+                       children: ContactCategories.values.map((cat) {
+                         final active = _selectedCategory == cat;
+                         return GestureDetector(
+                           onTap: () {
+                             setState(() {
+                               _selectedCategory = cat;
+                             });
+                           },
+                           child: Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                             decoration: BoxDecoration(
+                               color: active ? AppColors.violet : AppColors.surface,
+                               borderRadius: BorderRadius.circular(10),
+                               border: Border.all(
+                                 color: active ? Colors.transparent : AppColors.border,
+                                 width: 1.2,
+                               ),
+                             ),
+                             child: Text(
+                               cat,
+                               style: TextStyle(
+                                 fontFamily: 'Outfit',
+                                 fontSize: 12,
+                                 fontWeight: FontWeight.w700,
+                                 color: active ? Colors.white : AppColors.muted,
+                               ),
+                             ),
+                           ),
+                         );
+                       }).toList(),
+                     ),
                   ],
                 ),
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../data/repositories/api_repository.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../data/models/models.dart';
 
@@ -9,6 +11,13 @@ class AnalyticsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final repo = Provider.of<ApiRepository>(context);
+    final event = repo.events.firstWhere((e) => e.id == this.event.id, orElse: () => this.event);
+
+    final int total = event.totalInvited;
+    final double responseRate = total == 0 ? 0.0 : ((event.acceptedCount + event.declinedCount) / total) * 100;
+    final double conversion = total == 0 ? 0.0 : (event.acceptedCount / total) * 100;
+
     return Scaffold(
       backgroundColor: AppColors.canvas,
       appBar: AppBar(
@@ -99,13 +108,13 @@ class AnalyticsScreen extends StatelessWidget {
                   ],
                 ),
                 padding: const EdgeInsets.all(20),
-                child: const Row(
+                child: Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'CONVERSION RATIO',
                             style: TextStyle(
                               fontFamily: 'JetBrains Mono',
@@ -115,20 +124,20 @@ class AnalyticsScreen extends StatelessWidget {
                               letterSpacing: 1.0,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            '74.3% Response Rate',
-                            style: TextStyle(
+                            '${responseRate.toStringAsFixed(1)}% Response Rate',
+                            style: const TextStyle(
                               fontFamily: 'Outfit',
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
                               fontSize: 22,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'Outperforming similar workspace sector campaigns by 12.4%',
-                            style: TextStyle(
+                            'Based on $total total invited guest${total == 1 ? "" : "s"}',
+                            style: const TextStyle(
                               fontFamily: 'Outfit',
                               color: Colors.white70,
                               fontSize: 11,
@@ -137,7 +146,7 @@ class AnalyticsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Icon(Icons.trending_up_rounded, color: Colors.white, size: 36),
+                    const Icon(Icons.trending_up_rounded, color: Colors.white, size: 36),
                   ],
                 ),
               ),
@@ -201,19 +210,19 @@ class AnalyticsScreen extends StatelessWidget {
                             ),
                           ),
                           // Center %
-                          const Column(
+                          Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '74%',
-                                style: TextStyle(
+                                '${conversion.toStringAsFixed(0)}%',
+                                style: const TextStyle(
                                   fontFamily: 'JetBrains Mono',
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.ink,
                                 ),
                               ),
-                              Text(
+                              const Text(
                                 'CONV.',
                                 style: TextStyle(
                                   fontFamily: 'JetBrains Mono',
@@ -355,13 +364,20 @@ class DonutChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double total = accepted + pending + declined;
-    if (total == 0) return;
-
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final strokeWidth = 14.0;
     final rect = Rect.fromCircle(center: center, radius: radius - strokeWidth);
+
+    // Draw background track
+    final paintTrack = Paint()
+      ..color = AppColors.border
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    canvas.drawCircle(center, radius - strokeWidth, paintTrack);
+
+    final double total = accepted + pending + declined;
+    if (total == 0) return;
 
     final acceptedSweep = (accepted / total) * 2 * 3.14159265;
     final pendingSweep = (pending / total) * 2 * 3.14159265;

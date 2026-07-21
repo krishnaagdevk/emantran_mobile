@@ -91,9 +91,9 @@ class AsymmetricBottomNavBar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.grid_view_outlined, Icons.grid_view_rounded),
-                _buildNavItem(1, Icons.forum_outlined, Icons.forum_rounded),
-                _buildNavItem(2, Icons.import_contacts_outlined, Icons.import_contacts_rounded),
+                _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded),
+                _buildNavItem(1, Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded),
+                _buildNavItem(2, Icons.contacts_outlined, Icons.contacts_rounded),
                 _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded),
               ],
             ),
@@ -110,14 +110,30 @@ class AsymmetricBottomNavBar extends StatelessWidget {
       onTap: () => onTabSelected(index),
       borderRadius: BorderRadius.circular(20),
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          child: Icon(
-            isSelected ? filledIcon : outlineIcon,
-            color: isSelected ? AppColors.cta : AppColors.primary,
-            size: 24,
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              child: Icon(
+                isSelected ? filledIcon : outlineIcon,
+                color: isSelected ? AppColors.violet : AppColors.faint.withOpacity(0.7),
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Sleek premium active dot indicator
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: isSelected ? 5 : 0,
+              height: 5,
+              decoration: const BoxDecoration(
+                color: AppColors.violet,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
         ),
       ),
     );

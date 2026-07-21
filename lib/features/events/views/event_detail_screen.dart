@@ -15,6 +15,7 @@ class EventDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final repo = Provider.of<ApiRepository>(context);
+    final event = repo.events.firstWhere((e) => e.id == this.event.id, orElse: () => this.event);
     final isLive = event.isLive;
 
     return Scaffold(
@@ -249,7 +250,7 @@ class EventDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           // Mini segmented visual ratio bar
-                          _buildSegmentedBar(),
+                          _buildSegmentedBar(event),
                         ],
                       ),
                     ),
@@ -405,7 +406,7 @@ class EventDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSegmentedBar() {
+  Widget _buildSegmentedBar(OrgEvent event) {
     final total = event.totalInvited;
     if (total == 0) return const SizedBox();
 

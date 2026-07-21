@@ -21,6 +21,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   final _priceController = TextEditingController(text: '10.00');
 
   bool _isFree = true;
+  bool _isPublishing = false;
   DateTime _selectedDateTime = DateTime.now().add(const Duration(days: 1)); // Default to tomorrow
 
   String get _selectedDateText {
@@ -100,33 +101,55 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
-  void _publishEvent() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _publishEvent() async {
+    if (_formKey.currentState!.validate() && !_isPublishing) {
+      setState(() {
+        _isPublishing = true;
+      });
+
       final repo = Provider.of<ApiRepository>(context, listen: false);
       final host = _hostController.text.trim().isEmpty 
           ? (repo.currentUser?.name ?? 'Workspace Admin') 
           : _hostController.text.trim();
 
-      repo.createEvent(
-        title: _titleController.text.trim(),
-        host: host,
-        dateText: _selectedDateText,
-        timeText: _selectedTimeText,
-        venue: _venueController.text.trim(),
-        notes: _notesController.text.trim(),
-        price: _isFree ? 0 : (double.tryParse(_priceController.text) ?? 10.00),
-        isFree: _isFree,
-        isoDate: _selectedDateTime.toUtc().toIso8601String(),
-      );
+      try {
+        await repo.createEvent(
+          title: _titleController.text.trim(),
+          host: host,
+          dateText: _selectedDateText,
+          timeText: _selectedTimeText,
+          venue: _venueController.text.trim(),
+          notes: _notesController.text.trim(),
+          price: _isFree ? 0.0 : (double.tryParse(_priceController.text) ?? 0.0),
+          isFree: _isFree,
+          isoDate: _selectedDateTime.toUtc().toIso8601String(),
+        );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Event "${_titleController.text}" published successfully!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-
-      Navigator.pop(context); // Close the fullscreen overlay dialog
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Event "${_titleController.text}" published successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          Navigator.pop(context); // Close the fullscreen overlay dialog
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to publish event: ${e.toString().replaceAll('Exception: ', '')}'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isPublishing = false;
+          });
+        }
+      }
     }
   }
 
@@ -296,8 +319,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
                 // Action Publish Button (Coral Pill)
                 ElevatedButton(
-                  onPressed: _publishEvent,
-                  child: const Text('Publish event'),
+                  onPressed: _isPublishing ? null : _publishEvent,
+                  child: _isPublishing
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Publish event'),
                 ),
                 const SizedBox(height: 20),
               ],

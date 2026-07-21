@@ -16,20 +16,43 @@ class _DomainVerificationScreenState extends State<DomainVerificationScreen> {
   int? _selectedMethodIndex;
   bool _isVerifying = false;
   bool _isVerified = false;
+  String _verificationStatusText = 'Resolving DNS records for domain...';
 
   void _startVerification() async {
     if (_selectedMethodIndex == null) return;
     
     setState(() {
       _isVerifying = true;
+      _verificationStatusText = 'Resolving DNS records for domain...';
     });
 
-    // Simulate DNS/Email server validation request
-    await Future.delayed(const Duration(milliseconds: 2200));
+    // Step 1: DNS Resolve
+    await Future.delayed(const Duration(milliseconds: 1000));
+    if (!mounted) return;
+    setState(() {
+      _verificationStatusText = 'Checking TXT records matching emantran-verification...';
+    });
+
+    // Step 2: TXT check
+    await Future.delayed(const Duration(milliseconds: 1000));
+    if (!mounted) return;
+    setState(() {
+      _verificationStatusText = 'Establishing SSL handshake with authority server...';
+    });
+
+    // Step 3: Authority Server handshake
+    await Future.delayed(const Duration(milliseconds: 1000));
+    if (!mounted) return;
+    setState(() {
+      _verificationStatusText = 'Applying official cryptographic signature...';
+    });
+
+    // Step 4: Verification finalize
+    await Future.delayed(const Duration(milliseconds: 800));
 
     if (mounted) {
       final repo = Provider.of<ApiRepository>(context, listen: false);
-      repo.verifyCurrentRoom(); // Updates isVerified state globally
+      await repo.verifyCurrentRoom(); // Updates isVerified state globally
 
       setState(() {
         _isVerifying = false;
@@ -239,11 +262,12 @@ class _DomainVerificationScreenState extends State<DomainVerificationScreen> {
         ),
         const SizedBox(height: 36),
         Text(
-          'Validating credentials...',
+          _verificationStatusText,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: AppColors.primary,
-                fontSize: 22,
+                fontSize: 20,
               ),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 10),
         const Text(
